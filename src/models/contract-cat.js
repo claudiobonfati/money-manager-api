@@ -1,15 +1,6 @@
 const mongoose = require('mongoose')
 
-const categorySchema = new mongoose.Schema({
-    type: {
-        type: String,
-        enum: [ 
-            'expense', 
-            'income' 
-        ],
-        required: true,
-        trim: true,
-    },
+const contractCatSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -21,18 +12,25 @@ const categorySchema = new mongoose.Schema({
             'pizza', 
             'medic', 
             'apple', 
-            'paypal' 
+            'paypal',
+            'money',
         ],
         required: true,
     }
 })
 
-categorySchema.virtual('contracts', {
+contractCatSchema.virtual('contracts', {
     ref: 'Contract',
     localField: '_id',
     foreignField: 'category'
 })
 
-const ContractCat = mongoose.model('TransactionCat', categorySchema)
+contractCatSchema.virtual('terms', {
+    ref: 'Contract-Cat-Term',
+    localField: '_id',
+    foreignField: 'category'
+})
+
+const ContractCat = mongoose.model('Contract-Cat', contractCatSchema)
 
 module.exports = ContractCat

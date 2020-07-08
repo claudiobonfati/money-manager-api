@@ -1,4 +1,6 @@
 const mongoose = require('mongoose')
+const ContractCat = require('./contract-cat')
+const ContractCatTerm = require('./contract-cat-term')
 const Transaction = require('./transaction')
 const getNextWeekDayDate = require('../helpers/date')
 
@@ -56,8 +58,7 @@ const contractSchema = new mongoose.Schema({
     },
     category: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'ContractCat'
+        ref: 'Contract-Cat'
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -70,6 +71,26 @@ contractSchema.virtual('transactions', {
     ref: 'Transaction',
     localField: '_id',
     foreignField: 'contract'
+})
+
+contractSchema.pre('save', async function (next) {
+    const contract = this
+    const titleWords = contract.title.toLowerCase().split(' ')
+    
+    let term = null 
+    let category = null 
+
+    term = await ContractCatTerm.findOne({
+        term: { $in: titleWords }
+    })
+
+    if (term) {
+        category = await ContractCat.findById(term.category)
+
+        if (category) contract.category = category._id
+    }
+
+    next()
 })
 
 contractSchema.post('save', async function (doc) {
@@ -87,14 +108,14 @@ contractSchema.post('save', async function (doc) {
         const transaction = new Transaction(transactionObj)
 
         await transaction.save()
+    } else if (contract.recurrence === 'monthly') {
+        
     } else {
         let frequencyDay = 0
         if (contract.recurrence === 'weekly'){
             frequencyDay = 7
         } else if (contract.recurrence === 'every_two_weeks'){
             frequencyDay = 14
-        } else if (contract.recurrence === 'monthly'){
-            frequencyDay = 30
         }
         
         let loop = 0
