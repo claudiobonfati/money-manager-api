@@ -107,7 +107,7 @@ contractSchema.post('save', async function (doc) {
             contract: contract._id
         }
 
-        const transaction = new Transaction(transactionObj)
+        transactions.push(transactionObj)
 
         await transaction.save()
     } else if (contract.recurrence === 'monthly') {
@@ -150,7 +150,10 @@ contractSchema.post('save', async function (doc) {
         }
     }
 
-    console.log(transactions) // SAVE TRANSACTIONS HERE
+    const transactionSaved = await Transaction.insertMany(transactions)
+
+    if (!transactionSaved)
+        throw new Error('Error while saving transactions!')
 })
 
 const Contract = mongoose.model('Contract', contractSchema)
