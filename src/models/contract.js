@@ -51,7 +51,7 @@ const contractSchema = new mongoose.Schema({
         type: Number,
         required: true,
         validate(value) {
-            if (value < 0) {
+            if (value < 1) {
                 throw new Error('"Date Due" cannot be a negative number!')
             }
         }
@@ -95,8 +95,10 @@ contractSchema.pre('save', async function (next) {
 
 contractSchema.post('save', async function (doc) {
     const contract = doc
-    const limit = 10
+    const limit = 24
     const today = new Date()
+    const loop = (contract.installments === 0 ? limit : contract.installments)
+    let transactions = []
 
     if (contract.recurrence === 'once') {
         const transactionObj = {
@@ -109,23 +111,32 @@ contractSchema.post('save', async function (doc) {
 
         await transaction.save()
     } else if (contract.recurrence === 'monthly') {
-        
+        let date = new Date()
+        const startMonth = (today.getDate() <= contract.dayDue ? 0 : 1)
+
+        for (i = 0; i < loop; i++) {
+            date.setMonth(today.getMonth() + startMonth + i)
+            date.setDate(contract.dayDue - 1)
+            
+            const transactionObj = {
+                date: date,
+                price: contract.price,
+                contract: contract._id
+            }
+
+            transactions.push(transactionObj)
+
+            date = new Date()
+        }
     } else {
         let frequencyDay = 0
+
         if (contract.recurrence === 'weekly'){
             frequencyDay = 7
         } else if (contract.recurrence === 'every_two_weeks'){
             frequencyDay = 14
         }
-        
-        let loop = 0
-        if (contract.installments === 0) {
-            loop = limit
-        } else {
-            loop = contract.installments
-        }
 
-        const transactions = []
         for (i = 0; i < loop; i++) {
             const date = getNextWeekDayDate(today, contract.dayDue, (i * frequencyDay))
             
@@ -137,9 +148,9 @@ contractSchema.post('save', async function (doc) {
 
             transactions.push(transactionObj)
         }
-
-        console.log(transactions)
     }
+
+    console.log(transactions) // SAVE TRANSACTIONS HERE
 })
 
 const Contract = mongoose.model('Contract', contractSchema)
