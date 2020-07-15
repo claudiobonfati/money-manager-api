@@ -7,10 +7,13 @@ const getNextWeekDayDate = require('../helpers/date')
 const contractSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: [ 
-            'expense', 
-            'income' 
-        ],
+        enum: {
+            values: [ 
+                'expense', 
+                'income' 
+            ],
+            message: 'Invalid type'
+        },
         required: true,
     },
     title: {
@@ -20,7 +23,7 @@ const contractSchema = new mongoose.Schema({
     },
     price: {
         type: Number,
-        required: true,
+        required: [true, 'Please, inform a price.'],
         validate(value) {
             if (value < 0) {
                 throw new Error('Contract value cannot be negative!')
@@ -29,18 +32,21 @@ const contractSchema = new mongoose.Schema({
     },
     recurrence: {
         type: String,
-        enum: [ 
-            'once', 
-            'weekly', 
-            'every_two_weeks', 
-            'monthly' 
-        ],
+        enum: {
+            values: [ 
+                'once', 
+                'weekly', 
+                'every_two_weeks', 
+                'monthly' 
+            ],
+            message: 'Invalid recurrence'
+        },
         required: false,
         default: false,
     },
     installments: {
         type: Number, // 0 = lifetime 
-        required: true,
+        required: [true, '"Installments" is required!'],
         validate(value) {
             if (value < 0) {
                 throw new Error('"Installments" cannot be a negative number!')
@@ -49,7 +55,7 @@ const contractSchema = new mongoose.Schema({
     },
     dayDue: {
         type: Number,
-        required: true,
+        required: [true, '"Date Due" is required!'],
         validate(value) {
             if (value < 1) {
                 throw new Error('"Date Due" cannot be a negative number!')
@@ -93,8 +99,8 @@ contractSchema.pre('save', async function (next) {
     next()
 })
 
-contractSchema.post('save', async function (doc) {
-    const contract = doc
+contractSchema.methods.createTransactions = async function () {
+    const contract = this
     const limit = 24
     const today = new Date()
     const loop = (contract.installments === 0 ? limit : contract.installments)
@@ -116,7 +122,11 @@ contractSchema.post('save', async function (doc) {
 
         for (i = 0; i < loop; i++) {
             date.setMonth(today.getMonth() + startMonth + i)
-            date.setDate(contract.dayDue - 1)
+            date.setDate(contract.dayDue)
+            date.setHours(0)
+            date.setMinutes(0)
+            date.setSeconds(0)
+            date.setMilliseconds(0)
             
             const transactionObj = {
                 date: date,
@@ -154,6 +164,38 @@ contractSchema.post('save', async function (doc) {
 
     if (!transactionSaved)
         throw new Error('Error while saving transactions!')
+}
+
+contractSchema.methods.updateTransactions = async function () {
+    let contract = this
+    const today = new Date()
+    const loop = (contract.installments === 0 ? limit : contract.installments)
+
+    let allTransactions = await Transaction.countDocuments({ contract: contract._id })
+    let futureTransactions = await Transaction.deleteMany({ contract: contract._id, date: { $gte: today } })
+
+    // Update count of remaining transactions 
+    contract.installments = loop - (allTransactions - futureTransactions.deletedCount)
+
+    if (contract.installments > 0)
+        await contract.createTransactions()
+}
+
+contractSchema.post('save', async contract => {
+    try {
+        await contract.createTransactions()
+    } catch (e) {
+        await Contract.deleteOne({ _id: contract._id })
+        throw new Error('Error while saving transactions. Contract not created!')
+    }
+})
+
+contractSchema.post('findOneAndUpdate', async contract => {    
+    try {
+        await contract.updateTransactions()
+    } catch (e) {
+        throw new Error('Error while updating transactions!')
+    }
 })
 
 const Contract = mongoose.model('Contract', contractSchema)
