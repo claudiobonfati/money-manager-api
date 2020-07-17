@@ -224,7 +224,9 @@ contractSchema.post('save', async contract => {
     }
 })
 
-contractSchema.pre('findOneAndDelete', async contract => {    
+contractSchema.pre('findOneAndDelete', async function (next) {
+    const contract = await this.model.findOne(this.getQuery())
+
     try {
         const today = new Date()
         today.setHours(0)
@@ -233,8 +235,10 @@ contractSchema.pre('findOneAndDelete', async contract => {
         today.setMilliseconds(0)
 
         await Transaction.deleteMany({ contract: contract._id, date: { $gte: today } })
+
+        next()
     } catch (e) {
-        throw new Error('Error while deleting future transactions!')
+        next(new Error('Error while deleting future transactions!'))
     }
 })
 
