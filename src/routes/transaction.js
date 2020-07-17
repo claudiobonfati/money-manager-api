@@ -7,12 +7,12 @@ const router = new express.Router()
 // router.post('/transactions', auth, async (req, res) => {
 //     try {
 //         if (req.body.recurrence !== 'once' &&
-//             req.body.installments < 2) {
+//             req.body.instalments < 2) {
 //             throw new Error()
 //         } 
 
 //         if (req.body.recurrence === 'once' &&
-//             req.body.installments !== 1) {
+//             req.body.instalments !== 1) {
 //             throw new Error()
 //         }
 

@@ -11,7 +11,6 @@ router.post('/contractCats', auth, async (req, res) => {
         await contractCat.save()
         res.status(201).send(contractCat)
     } catch (e) {
-        console.log(e)
         res.status(400).send()
     }
 })

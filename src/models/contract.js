@@ -25,8 +25,8 @@ const contractSchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Please, inform a price.'],
         validate(value) {
-            if (value < 0) {
-                throw new Error('Contract value cannot be negative!')
+            if (value <= 0) {
+                throw new Error('Contract price cannot be zero or negative!')
             }
         }
     },
@@ -44,21 +44,21 @@ const contractSchema = new mongoose.Schema({
         required: false,
         default: false,
     },
-    installments: {
+    instalments: {
         type: Number, // 0 = lifetime 
-        required: [true, '"Installments" is required!'],
+        required: [true, 'Please, inform the instalments!'],
         validate(value) {
             if (value < 0) {
-                throw new Error('"Installments" cannot be a negative number!')
+                throw new Error('Contract instalments cannot be a negative number!')
             }
         }
     },
     dayDue: {
-        type: Number,
-        required: [true, '"Date Due" is required!'],
+        type: Number, // 0 = today
+        required: [true, 'Please, inform the day due!'],
         validate(value) {
-            if (value < 1) {
-                throw new Error('"Date Due" cannot be a negative number!')
+            if (value < 0) {
+                throw new Error('Contract day due cannot be a negative number!')
             }
         }
     },
@@ -79,10 +79,10 @@ contractSchema.virtual('transactions', {
     foreignField: 'contract'
 })
 
-contractSchema.pre('save', async function (next) {
+contractSchema.methods.findCategory = async function () {
     const contract = this
     const titleWords = contract.title.toLowerCase().split(' ')
-    
+
     let term = null 
     let category = null 
 
@@ -95,27 +95,29 @@ contractSchema.pre('save', async function (next) {
 
         if (category) contract.category = category._id
     }
-
-    next()
-})
+}
 
 contractSchema.methods.createTransactions = async function () {
     const contract = this
     const limit = 24
     const today = new Date()
-    const loop = (contract.installments === 0 ? limit : contract.installments)
+    today.setHours(0)
+    today.setMinutes(0)
+    today.setSeconds(0)
+    today.setMilliseconds(0)
+    const loop = (contract.instalments === 0 ? limit : contract.instalments)
     let transactions = []
 
     if (contract.recurrence === 'once') {
+        const date = today.setDate(today.getDate() + contract.dayDue)
+
         const transactionObj = {
-            date: contract.date,
+            date,
             price: contract.price,
             contract: contract._id
         }
 
         transactions.push(transactionObj)
-
-        await transaction.save()
     } else if (contract.recurrence === 'monthly') {
         let date = new Date()
         const startMonth = (today.getDate() <= contract.dayDue ? 0 : 1)
@@ -129,7 +131,7 @@ contractSchema.methods.createTransactions = async function () {
             date.setMilliseconds(0)
             
             const transactionObj = {
-                date: date,
+                date,
                 price: contract.price,
                 contract: contract._id
             }
@@ -151,7 +153,7 @@ contractSchema.methods.createTransactions = async function () {
             const date = getNextWeekDayDate(today, contract.dayDue, (i * frequencyDay))
             
             const transactionObj = {
-                date: date,
+                date,
                 price: contract.price,
                 contract: contract._id
             }
@@ -169,32 +171,70 @@ contractSchema.methods.createTransactions = async function () {
 contractSchema.methods.updateTransactions = async function () {
     let contract = this
     const today = new Date()
-    const loop = (contract.installments === 0 ? limit : contract.installments)
+    today.setHours(0)
+    today.setMinutes(0)
+    today.setSeconds(0)
+    today.setMilliseconds(0)
+
+    const loop = (contract.instalments === 0 ? limit : contract.instalments)
 
     let allTransactions = await Transaction.countDocuments({ contract: contract._id })
     let futureTransactions = await Transaction.deleteMany({ contract: contract._id, date: { $gte: today } })
 
     // Update count of remaining transactions 
-    contract.installments = loop - (allTransactions - futureTransactions.deletedCount)
+    contract.instalments = loop - (allTransactions - futureTransactions.deletedCount)
 
-    if (contract.installments > 0)
+    if (contract.instalments > 0)
         await contract.createTransactions()
 }
 
+contractSchema.pre('save', async function (next) {
+    const contract = this
+
+    if (contract.recurrence === 'once' &&
+        contract.instalments !== 1)
+        next(new Error('Recurrence and instalments not matching!'))
+
+    if (contract.recurrence === 'weekly'            && contract.dayDue > 7 || 
+        contract.recurrence === 'every_two_weeks'   && contract.dayDue > 14 || 
+        contract.recurrence === 'monthly'           && contract.dayDue > 31)
+        next(new Error('Recurrence and dayDue not matching!'))
+
+    await contract.findCategory()
+
+    next()
+})
+
 contractSchema.post('save', async contract => {
-    try {
-        await contract.createTransactions()
-    } catch (e) {
-        await Contract.deleteOne({ _id: contract._id })
-        throw new Error('Error while saving transactions. Contract not created!')
+    const transactions = Transaction.countDocuments({ _id: contract._id })
+
+    if (transactions) {
+        try {
+            await contract.updateTransactions()
+        } catch (e) {
+            throw new Error('Error while updating transactions!')
+        }
+    } else {
+        try {
+            await contract.createTransactions()
+        } catch (e) {
+            await Contract.deleteOne({ _id: contract._id })
+            throw new Error('Error while saving transactions. Contract not created!')
+        }
     }
 })
 
-contractSchema.post('findOneAndUpdate', async contract => {    
+contractSchema.pre('findOneAndDelete', async contract => {    
     try {
-        await contract.updateTransactions()
+        const today = new Date()
+        today.setHours(0)
+        today.setMinutes(0)
+        today.setSeconds(0)
+        today.setMilliseconds(0)
+
+        await Transaction.deleteMany({ contract: contract._id, date: { $gte: today } })
     } catch (e) {
-        throw new Error('Error while updating transactions!')
+        throw new Error('Error while deleting future transactions!')
     }
 })
 
