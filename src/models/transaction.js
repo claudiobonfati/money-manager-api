@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const Transaction = mongoose.model('Transaction', {
+const transactionSchema = new mongoose.Schema({
     price: {
         type: Number,
         required: true,
@@ -19,6 +19,10 @@ const Transaction = mongoose.model('Transaction', {
         required: true,
         ref: 'Contract'
     }
+}, {
+    timestamps: true
 })
+
+const Transaction = mongoose.model('Transaction', transactionSchema)
 
 module.exports = Transaction
