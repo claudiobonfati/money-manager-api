@@ -33,8 +33,8 @@ const userSchema = new mongoose.Schema({
             }
         }
     },
-    image: {
-        type: String,
+    avatar: {
+        type: Buffer,
     },
     tokens: [{
         token: {
