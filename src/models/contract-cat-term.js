@@ -12,6 +12,8 @@ const catTermSchema = new mongoose.Schema({
         required: true,
         ref: 'Contract-Cat'
     }
+}, {
+    timestamps: true
 })
 
 
