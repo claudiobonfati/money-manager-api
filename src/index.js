@@ -1,3 +1,4 @@
+const cors = require('cors')
 const express = require('express')
 require('./db/mongoose')
 const userRouter = require('./routes/user')
@@ -7,6 +8,7 @@ const contractCatRouter = require('./routes/contract-cat')
 const contractCatTermRouter = require('./routes/contract-cat-term')
 
 const app = express()
+app.use(cors())
 const port = process.env.PORT || 3000
 
 app.use(express.json())

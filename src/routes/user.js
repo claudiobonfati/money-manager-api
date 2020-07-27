@@ -128,4 +128,17 @@ router.get('/users/:id/avatar', async (req, res) => {
     }
 })
 
+router.post('/users/presentation', async (req, res) => {
+    try {
+        const user = await User.find({ email: req.body.email })
+
+        if (!user)
+            throw new Error()
+        
+        res.send(user)
+    } catch (e) {
+        res.status(404).send()
+    }
+})
+
 module.exports = router
