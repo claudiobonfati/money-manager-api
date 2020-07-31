@@ -17,16 +17,43 @@ router.post('/users', async (req, res) => {
     }
 })
 
-router.post('/users/login', async (req, res) => {
-    try {
-        const user = await User.findByCredentials(req.body.email, req.body.password)
-        const token = await user.generateAuthToken()
+router.post('/users/login', (req, res) => {
+    let mount = (list, n = 0, passwords = [], current = []) => {
+        if (n === list.length) passwords.push(current)
+        else list[n].forEach(item => mount(list, n+1, passwords, [...current, item]))
 
-        res.status(201).send({ user, token })
-    } catch (e) {
-        console.log(e)
-        res.status(400).send()
-    }
+        return passwords
+    };
+
+    let passwords = mount(req.body.password);
+
+    const testPassword = async (arr) => {
+        let counter = 1
+        let total = arr.length
+
+        for (let pass of arr) {
+            let myPass = pass.join('')
+            try {
+                const user = await User.findByCredentials(req.body.email, myPass)
+                const token = await user.generateAuthToken()
+                
+                res.status(201).send({ user, token })
+
+                return true
+            } catch(e) {
+                if (counter === total) {
+                    console.log(e)
+                    res.status(400).send()
+                }
+            }
+
+            counter++
+        }
+
+        return false;
+    };
+
+    testPassword(passwords)
 })
 
 router.post('/users/logout', auth, async (req, res) => {
@@ -130,11 +157,11 @@ router.get('/users/:id/avatar', async (req, res) => {
 
 router.post('/users/presentation', async (req, res) => {
     try {
-        const user = await User.find({ email: req.body.email })
+        const user = await User.findOne({ email: req.body.email })
 
         if (!user)
             throw new Error()
-        
+
         res.send(user)
     } catch (e) {
         res.status(404).send()
