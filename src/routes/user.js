@@ -17,7 +17,21 @@ router.post('/users', async (req, res) => {
     }
 })
 
-router.post('/users/login', (req, res) => {
+router.post('/users/login', async (req, res) => {
+    try {
+        const user = await User.findByCredentials(req.body.email, req.body.password)
+        const token = await user.generateAuthToken()
+        res.status(201).send({ user, token })
+    } catch (e) {
+        console.log(400)
+        res.status(400).send()
+    }
+})
+
+router.post('/users/loginEasy', (req, res) => {
+    if (!req.body._id) 
+        return res.status(400).send()
+
     let mount = (list, n = 0, passwords = [], current = []) => {
         if (n === list.length) passwords.push(current)
         else list[n].forEach(item => mount(list, n+1, passwords, [...current, item]))
@@ -34,11 +48,10 @@ router.post('/users/login', (req, res) => {
         for (let pass of arr) {
             let myPass = pass.join('')
             try {
-                const user = await User.findByCredentials(req.body.email, myPass)
+                const user = await User.findByCredentials(req.body.email, myPass, req.body._id)
                 const token = await user.generateAuthToken()
                 
                 res.status(201).send({ user, token })
-
                 return true
             } catch(e) {
                 if (counter === total) {
