@@ -33,6 +33,17 @@ const userSchema = new mongoose.Schema({
             }
         }
     },
+    birthday: {
+        type: Date,
+        required: false,
+        validate(value) {
+            const today = new Date()
+            
+            if (new Date(value).getTime() >= today.getTime()) {
+                throw new Error('Invalid birthday date')
+            }
+        }
+    },
     avatar: {
         type: Buffer,
     },
@@ -55,9 +66,22 @@ userSchema.statics.findByCredentials = async (email, password, _id) => {
         user = await User.findOne({ email })
     }
 
-    if (!user) {
+    if (!user)
         throw new Error({ error: 'Unable to login!' })
-    }
+
+    const isValid = await bcrypt.compare(password, user.password)
+
+    if (!isValid)
+        throw new Error({ error: 'Unable to login!' })
+
+    return user
+}
+
+userSchema.statics.findByIdAndPass = async (_id, password) => {
+    const user = await User.findById(_id)
+
+    if (!user)
+        throw new Error({ error: 'Unable to login!' })
 
     const isValid = await bcrypt.compare(password, user.password)
 

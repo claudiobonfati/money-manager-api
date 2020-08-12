@@ -18,6 +18,6 @@ app.use(contractRouter)
 app.use(contractCatRouter)
 app.use(contractCatTermRouter)
 
-app.listen(port, () => {
+app.listen(port, "192.168.15.6", () => {
     // console.log(`Server is up on ${port}`)
 })

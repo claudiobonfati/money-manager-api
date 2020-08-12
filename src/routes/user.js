@@ -1,4 +1,5 @@
 const express = require('express')
+const ObjectId = require('mongodb').ObjectID
 const multer = require('multer')
 const sharp = require('sharp')
 const User = require('../models/user')
@@ -23,7 +24,6 @@ router.post('/users/login', async (req, res) => {
         const token = await user.generateAuthToken()
         res.status(201).send({ user, token })
     } catch (e) {
-        console.log(400)
         res.status(400).send()
     }
 })
@@ -31,6 +31,8 @@ router.post('/users/login', async (req, res) => {
 router.post('/users/loginEasy', (req, res) => {
     if (!req.body._id) 
         return res.status(400).send()
+
+    req.body._id = new ObjectId(req.body._id) 
 
     let mount = (list, n = 0, passwords = [], current = []) => {
         if (n === list.length) passwords.push(current)
@@ -48,7 +50,7 @@ router.post('/users/loginEasy', (req, res) => {
         for (let pass of arr) {
             let myPass = pass.join('')
             try {
-                const user = await User.findByCredentials(req.body.email, myPass, req.body._id)
+                const user = await User.findByIdAndPass(req.body._id, myPass)
                 const token = await user.generateAuthToken()
                 
                 res.status(201).send({ user, token })
@@ -99,7 +101,7 @@ router.get('/users/me', auth, async (req, res) => {
 
 router.patch('/users/me', auth, async (req, res) => {
     const updates = Object.keys(req.body)
-    const updatesAllowed = [ 'name', 'email', 'password', 'age' ]
+    const updatesAllowed = [ 'name', 'email', 'password', 'age', 'birthday' ]
     const canUpdate = updates.every(update => updatesAllowed.includes(update))
 
     if (!canUpdate) {
