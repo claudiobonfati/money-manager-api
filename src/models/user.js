@@ -108,10 +108,15 @@ userSchema.methods.toJSON = function () {
 
     delete userObject.password
     delete userObject.tokens
-    delete userObject.avatar
     delete userObject.createdAt
     delete userObject.updatedAt
     delete userObject.__v
+
+    if (userObject.avatar) {
+        userObject.avatar = `users/${userObject._id}/avatar`
+    } else {
+        delete userObject.avatar
+    }
 
     return userObject
 }

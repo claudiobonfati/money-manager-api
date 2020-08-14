@@ -101,7 +101,7 @@ router.get('/users/me', auth, async (req, res) => {
 
 router.patch('/users/me', auth, async (req, res) => {
     const updates = Object.keys(req.body)
-    const updatesAllowed = [ 'name', 'email', 'password', 'age', 'birthday' ]
+    const updatesAllowed = [ 'name', 'birthday' ]
     const canUpdate = updates.every(update => updatesAllowed.includes(update))
 
     if (!canUpdate) {
