@@ -151,10 +151,12 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
 })
 
 router.get('/users/me/avatar', auth, async (req, res) => {
-    if(!req.user.avatar)
-        res.status(404).send
-
-    res.set('Content-Type', 'image/png').send(req.user.avatar)
+    if(!req.user.avatar) {
+        const buffer = await sharp('src/images/mascot.svg').png().toBuffer()
+        res.set('Content-Type', 'image/png').send(buffer)
+    } else {
+        res.set('Content-Type', 'image/png').send(req.user.avatar)
+    }
 })
 
 router.get('/users/:id/avatar', async (req, res) => {
@@ -166,7 +168,8 @@ router.get('/users/:id/avatar', async (req, res) => {
 
         res.set('Content-Type', 'image/png').send(user.avatar)
     } catch (e) {
-        res.status(404).send()
+        const buffer = await sharp('src/images/mascot.svg').png().toBuffer()
+        res.set('Content-Type', 'image/png').send(buffer)
     }
 })
 
