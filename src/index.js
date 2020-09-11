@@ -6,6 +6,7 @@ const transactionRouter = require('./routes/transaction')
 const contractRouter = require('./routes/contract')
 const contractCatRouter = require('./routes/contract-cat')
 const contractCatTermRouter = require('./routes/contract-cat-term')
+const dashboardRouter = require('./routes/dashboard')
 
 const app = express()
 app.use(cors())
@@ -17,6 +18,7 @@ app.use(transactionRouter)
 app.use(contractRouter)
 app.use(contractCatRouter)
 app.use(contractCatTermRouter)
+app.use(dashboardRouter)
 
 app.listen(port, "192.168.15.6", () => {
     // console.log(`Server is up on ${port}`)
