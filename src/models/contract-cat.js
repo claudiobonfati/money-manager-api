@@ -18,7 +18,10 @@ const contractCatSchema = new mongoose.Schema({
         required: true,
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { 
+        virtuals: true
+    }
 })
 
 contractCatSchema.virtual('contracts', {
@@ -32,6 +35,15 @@ contractCatSchema.virtual('terms', {
     localField: '_id',
     foreignField: 'category'
 })
+
+// contractCatSchema.methods.toJSON = function () {
+//     const contractCat = this
+//     const contractCatObject = contractCat.toObject()
+    
+//     delete contractCatObject.id
+
+//     return contractCatObject
+// }
 
 const ContractCat = mongoose.model('Contract-Cat', contractCatSchema)
 

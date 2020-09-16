@@ -72,7 +72,10 @@ const contractSchema = new mongoose.Schema({
         ref: 'User'
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { 
+        virtuals: true
+    }
 })
 
 contractSchema.virtual('transactions', {
@@ -80,6 +83,15 @@ contractSchema.virtual('transactions', {
     localField: '_id',
     foreignField: 'contract'
 })
+
+// contractSchema.methods.toJSON = function () {
+//     const contract = this
+//     const contractObject = contract.toObject()
+    
+//     // delete contractObject.id
+
+//     return contractObject
+// }
 
 contractSchema.methods.findCategory = async function () {
     const contract = this
