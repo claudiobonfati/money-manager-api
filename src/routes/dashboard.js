@@ -5,11 +5,11 @@ const Transaction = require('../models/transaction')
 require('../helpers/async-foreach')
 const router = new express.Router()
 
-router.post('/dashboard/:year/:month/:day', auth, async (req, res) => {
+router.post('/dashboard', auth, async (req, res) => {
     // let date = new Date()
-    let year = parseInt(req.params.year)
-    let month = parseInt(req.params.month)
-    let day = parseInt(req.params.day)
+    let year = parseInt(req.body.year)
+    let month = parseInt(req.body.month)
+    let day = parseInt(req.body.day)
 
     let startDate = new Date(year, month, 1)
     let limitDate = new Date(year, month, day + 1)
