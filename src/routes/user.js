@@ -3,8 +3,10 @@ const ObjectId = require('mongodb').ObjectID
 const multer = require('multer')
 const sharp = require('sharp')
 const User = require('../models/user')
+const Contract = require('../models/contract')
 const auth = require('../middleware/auth')
 const router = new express.Router()
+require('../helpers/async-foreach')
 
 router.post('/users', async (req, res) => {
     const user = new User(req.body)
@@ -97,6 +99,51 @@ router.post('/users/logoutAll', auth, async (req, res) => {
 
 router.get('/users/me', auth, async (req, res) => {
     res.send(req.user)
+})
+
+router.get('/users/me/wallet', auth, async (req, res) => {
+    let limitDate = new Date()
+    // Store all transactions until given month
+    let incomeTransactions = []
+    let expenseTransactions = []
+
+    // Get amount of transactions
+    let allContracts = await Contract.find({ owner: req.user._id })
+    .select('transactions type')
+    .populate({
+      path: 'contract',
+      select: "icon -_id"
+    })
+    .populate({
+      path: 'transactions',
+      match: {
+        date: {
+          $lt: limitDate
+        }
+      },
+      select: "date price -_id -contract"
+    })
+    .lean()
+
+    // Sum incomes and expenses
+    await allContracts.forEachAsync(contract => {
+      if (contract.type === 'income') {
+        incomeTransactions = incomeTransactions.concat(contract.transactions)
+      } else if (contract.type === 'expense') {
+        expenseTransactions = expenseTransactions.concat(contract.transactions)
+      }
+    })
+
+    let incomePrices = incomeTransactions.map(i => i.price)
+    let expensePrices = expenseTransactions.map(i => i.price)
+    
+    let incomeTotal = incomePrices.reduce((a, b) => a + b, 0)
+    let expenseTotal = expensePrices.reduce((a, b) => a + b, 0)
+
+    res.send({
+        transactions: incomeTransactions.length + expenseTransactions.length,
+        inWallet: incomeTotal - expenseTotal
+    })
 })
 
 router.patch('/users/me', auth, async (req, res) => {
