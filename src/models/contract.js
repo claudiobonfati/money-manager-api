@@ -45,7 +45,7 @@ const contractSchema = new mongoose.Schema({
         default: false,
     },
     instalments: {
-        type: Number, // 0 = lifetime 
+        type: Number,
         required: [true, 'Please, inform the instalments!'],
         validate(value) {
             if (value < 0) {
@@ -84,15 +84,6 @@ contractSchema.virtual('transactions', {
     foreignField: 'contract'
 })
 
-// contractSchema.methods.toJSON = function () {
-//     const contract = this
-//     const contractObject = contract.toObject()
-    
-//     // delete contractObject.id
-
-//     return contractObject
-// }
-
 contractSchema.methods.findCategory = async function () {
     const contract = this
     const titleWords = contract.title.toLowerCase().split(' ')
@@ -115,15 +106,11 @@ contractSchema.methods.createTransactions = async function () {
     const contract = this
     const limit = 24
     const today = new Date()
-    today.setHours(0)
-    today.setMinutes(0)
-    today.setSeconds(0)
-    today.setMilliseconds(0)
     const loop = (contract.instalments === 0 ? limit : contract.instalments)
     let transactions = []
 
     if (contract.recurrence === 'once') {
-        const date = today.setDate(today.getDate() + contract.dayDue)
+        const date = today.setDate(contract.dayDue)
 
         const transactionObj = {
             date,

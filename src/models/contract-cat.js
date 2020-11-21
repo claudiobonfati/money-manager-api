@@ -9,11 +9,19 @@ const contractCatSchema = new mongoose.Schema({
     icon: {
         type: String,
         enum: [ 
-            'pizza', 
-            'medic', 
-            'apple', 
-            'paypal',
-            'money',
+            'activity',
+            'anchor',
+            'coffee',
+            'credit-card',
+            'dollar-sign',
+            'headphones',
+            'map',
+            'monitor',
+            'shopping-cart',
+            'smartphone',
+            'tool',
+            'bookmark',
+            'star'
         ],
         required: true,
     }
@@ -35,15 +43,6 @@ contractCatSchema.virtual('terms', {
     localField: '_id',
     foreignField: 'category'
 })
-
-// contractCatSchema.methods.toJSON = function () {
-//     const contractCat = this
-//     const contractCatObject = contractCat.toObject()
-    
-//     delete contractCatObject.id
-
-//     return contractCatObject
-// }
 
 const ContractCat = mongoose.model('Contract-Cat', contractCatSchema)
 
