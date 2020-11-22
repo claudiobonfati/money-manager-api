@@ -18,6 +18,6 @@ app.use(contractCatRouter)
 app.use(contractCatTermRouter)
 app.use(dashboardRouter)
 
-app.listen(port, "192.168.0.103", () => {
-    console.log(`Server is up on ${port}`)
+app.listen(port, () => {
+    console.log(`Server is up on port ${port}`)
 })
