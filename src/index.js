@@ -9,7 +9,7 @@ const dashboardRouter = require('./routes/dashboard')
 
 const app = express()
 app.use(cors())
-const port = process.env.PORT || 3000
+const port = process.env.PORT
 
 app.use(express.json())
 app.use(userRouter)
