@@ -7,7 +7,13 @@ const router = new express.Router()
 require('../helpers/async-foreach')
 
 router.post('/dashboard', auth, async (req, res) => {
-    // let date = new Date()
+    // Check if user is new
+    let checkNewUser = await Contract.find({ owner: req.user._id }).select('title')
+
+    if (checkNewUser.length === 0)
+      return res.status(200).send({ newUser: true })
+
+    // Get variables from body
     let year = parseInt(req.body.year)
     let month = parseInt(req.body.month)
     let day = parseInt(req.body.day)

@@ -103,6 +103,7 @@ router.get('/users/me', auth, async (req, res) => {
 
 router.get('/users/me/wallet', auth, async (req, res) => {
     let limitDate = new Date()
+
     // Store all transactions until given month
     let incomeTransactions = []
     let expenseTransactions = []
