@@ -126,10 +126,6 @@ contractSchema.methods.createTransactions = async function () {
         for (i = 0; i < loop; i++) {
             date.setMonth(today.getMonth() + startMonth + i)
             date.setDate(contract.dayDue)
-            date.setHours(0)
-            date.setMinutes(0)
-            date.setSeconds(0)
-            date.setMilliseconds(0)
             
             const transactionObj = {
                 date,
