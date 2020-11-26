@@ -1,10 +1,10 @@
 # MoneyManager - API
 
-API for MoneyManager App. Made with Nodejs, Expressjs and Mongoose,
+API for [MoneyManager App](https://github.com/claudiobonfati/money-manager-app/). Made with Node, Express and Mongoose.
 
 ## Installation
 
-Use the node package manager to install all dependencies.
+Use node package manager to install all dependencies.
 
 ```bash
 npm install
@@ -19,13 +19,11 @@ mongod --config /usr/local/etc/mongod.conf
 ```
 
 To start the API run:
+
 ```bash
 npm run dev
 ```
 
-## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
+
+This project is licensed under the [MIT](https://choosealicense.com/licenses/mit/)
