@@ -5,6 +5,7 @@ const sharp = require('sharp')
 const User = require('../models/user')
 const Contract = require('../models/contract')
 const auth = require('../middleware/auth')
+const authEasyLogin = require('../middleware/authEasyLogin')
 const router = new express.Router()
 require('../helpers/async-foreach')
 
@@ -30,7 +31,7 @@ router.post('/users/login', async (req, res) => {
     }
 })
 
-router.post('/users/loginEasy', (req, res) => {
+router.post('/users/loginEasy', authEasyLogin, (req, res) => {
     if (!req.body._id) 
         return res.status(400).send()
 
@@ -59,7 +60,6 @@ router.post('/users/loginEasy', (req, res) => {
                 return true
             } catch(e) {
                 if (counter === total) {
-                    console.log(e)
                     res.status(400).send()
                 }
             }
@@ -75,9 +75,9 @@ router.post('/users/loginEasy', (req, res) => {
 
 router.post('/users/logout', auth, async (req, res) => {
     try {
-        req.user.tokens = req.user.tokens.filter(token => {
-            return token.token !== req.token
-        })
+        let tokenIndex = req.user.tokens.findIndex((obj => obj.token == req.token))
+        req.user.tokens[tokenIndex].status = 'trashed'
+        req.user.tokens[tokenIndex].easy_login_count = 0
 
         await req.user.save()
         res.send()

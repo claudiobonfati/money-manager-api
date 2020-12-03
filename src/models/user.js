@@ -51,6 +51,21 @@ const userSchema = new mongoose.Schema({
         token: {
             type: String,
             required: true
+        },
+        status: {
+            type: String,
+            enum: {
+                values: [ 
+                    'active', 
+                    'trashed' 
+                ],
+            },
+            required: true
+        },
+        easy_login_count: {
+            type: Number,
+            required: true,
+            default: 0,
         }
     }]
 }, {
@@ -96,7 +111,7 @@ userSchema.methods.generateAuthToken = async function () {
     const user = this
     const token = jwt.sign({ _id: user._id.toString() }, 'thejwtsecret')
 
-    user.tokens = user.tokens.concat({ token })
+    user.tokens = user.tokens.concat({ token, status: 'active' })
     await user.save()
 
     return token
