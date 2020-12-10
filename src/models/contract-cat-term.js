@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 
+// Category's terms collection schema
 const catTermSchema = new mongoose.Schema({
     term: {
         type: String,
@@ -15,7 +16,6 @@ const catTermSchema = new mongoose.Schema({
 }, {
     timestamps: true
 })
-
 
 const CatTerm = mongoose.model('Contract-Cat-Term', catTermSchema)
 

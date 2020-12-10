@@ -4,6 +4,7 @@ const ContractCatTerm = require('./contract-cat-term')
 const Transaction = require('./transaction')
 const getNextWeekDayDate = require('../helpers/date')
 
+// Contracts collection schema
 const contractSchema = new mongoose.Schema({
     type: {
         type: String,
@@ -78,12 +79,14 @@ const contractSchema = new mongoose.Schema({
     }
 })
 
+// Schema virtual fields
 contractSchema.virtual('transactions', {
     ref: 'Transaction',
     localField: '_id',
     foreignField: 'contract'
 })
 
+// Custom Schema functions
 contractSchema.methods.findCategory = async function () {
     const contract = this
     const titleWords = contract.title.toLowerCase().split(' ')
@@ -102,13 +105,15 @@ contractSchema.methods.findCategory = async function () {
     }
 }
 
+// Create contract's transactions
 contractSchema.methods.createTransactions = async function () {
     const contract = this
-    const limit = 24
+    const limit = 24 // Setting um contract's limit
     const today = new Date()
     const loop = (contract.instalments === 0 ? limit : contract.instalments)
     let transactions = []
 
+    // For contracts with only one trasaction
     if (contract.recurrence === 'once') {
         const date = today.setDate(contract.dayDue)
 
@@ -120,9 +125,11 @@ contractSchema.methods.createTransactions = async function () {
 
         transactions.push(transactionObj)
     } else if (contract.recurrence === 'monthly') {
+        // For contracts with multiple monthly transactions
         let date = new Date()
         const startMonth = (today.getDate() <= contract.dayDue ? 0 : 1)
 
+        // Create each transaction 
         for (i = 0; i < loop; i++) {
             date.setMonth(today.getMonth() + startMonth + i)
             date.setDate(contract.dayDue)
@@ -138,6 +145,7 @@ contractSchema.methods.createTransactions = async function () {
             date = new Date()
         }
     } else {
+        // For contracts with multiple transactions (weekly or every-two-weeks)
         let frequencyDay = 0
 
         if (contract.recurrence === 'weekly'){
@@ -146,6 +154,7 @@ contractSchema.methods.createTransactions = async function () {
             frequencyDay = 14
         }
 
+        // Create each transaction 
         for (i = 0; i < loop; i++) {
             const date = getNextWeekDayDate(today, contract.dayDue, (i * frequencyDay))
             
@@ -159,12 +168,14 @@ contractSchema.methods.createTransactions = async function () {
         }
     }
 
+    // Insert transactions
     const transactionSaved = await Transaction.insertMany(transactions)
 
     if (!transactionSaved)
         throw new Error('Error while saving transactions!')
 }
 
+// Update transactions
 contractSchema.methods.updateTransactions = async function () {
     let contract = this
     const today = new Date()
@@ -175,6 +186,7 @@ contractSchema.methods.updateTransactions = async function () {
 
     const loop = (contract.instalments === 0 ? limit : contract.instalments)
 
+    // Before creating new updated transactions, we must delete future transactions
     let allTransactions = await Transaction.countDocuments({ contract: contract._id })
     let futureTransactions = await Transaction.deleteMany({ contract: contract._id, date: { $gte: today } })
 
@@ -185,9 +197,11 @@ contractSchema.methods.updateTransactions = async function () {
         await contract.createTransactions()
 }
 
+// Run before save any contract
 contractSchema.pre('save', async function (next) {
     const contract = this
 
+    // Validate recurrance
     if (contract.recurrence === 'once' &&
         contract.instalments !== 1)
         next(new Error('Recurrence and instalments not matching!'))
@@ -197,21 +211,23 @@ contractSchema.pre('save', async function (next) {
         contract.recurrence === 'monthly'           && contract.dayDue > 31)
         next(new Error('Recurrence and dayDue not matching!'))
 
+    // Get contract's category by its title
     await contract.findCategory()
 
     next()
 })
 
+// Run after new contract was saved
 contractSchema.post('save', async contract => {
     const transactions = Transaction.countDocuments({ _id: contract._id })
 
-    if (transactions) {
+    if (transactions) { // If it's a pre-existing contract
         try {
             await contract.updateTransactions()
         } catch (e) {
             throw new Error('Error while updating transactions!')
         }
-    } else {
+    } else { // If it's a new contract
         try {
             await contract.createTransactions()
         } catch (e) {
@@ -221,9 +237,11 @@ contractSchema.post('save', async contract => {
     }
 })
 
+// Run before delete a contract
 contractSchema.pre('findOneAndDelete', async function (next) {
     const contract = await this.model.findOne(this.getQuery())
 
+    // Delete all future transactions
     try {
         const today = new Date()
         today.setHours(0)

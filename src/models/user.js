@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const Task = require('./transaction')
 
+// Users collection schema
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -72,10 +73,11 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 })
 
+// Custom Schema functions
 userSchema.statics.findByCredentials = async (email, password, _id) => {
     let user = null
 
-    if (_id){
+    if (_id) {
         user = await User.findOne({ _id, email })
     } else {
         user = await User.findOne({ email })
@@ -109,7 +111,7 @@ userSchema.statics.findByIdAndPass = async (_id, password) => {
 
 userSchema.methods.generateAuthToken = async function () {
     const user = this
-    const token = jwt.sign({ _id: user._id.toString() }, 'thejwtsecret')
+    const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET)
 
     user.tokens = user.tokens.concat({ token, status: 'active' })
     await user.save()

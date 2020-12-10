@@ -7,7 +7,7 @@ const authEasyLogin = async (req, res, next) => {
 
     try {
         const token = req.body.easylogin_token
-        const decoded = jwt.verify(token, 'thejwtsecret')
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
         const users = await User.find({ 
             _id: decoded._id, 
             'tokens.token': token,

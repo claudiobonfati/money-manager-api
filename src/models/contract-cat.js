@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 
+// Contract's Category collection schema
 const contractCatSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -32,6 +33,7 @@ const contractCatSchema = new mongoose.Schema({
     }
 })
 
+// Schema virtual fields
 contractCatSchema.virtual('contracts', {
     ref: 'Contract',
     localField: '_id',

@@ -165,7 +165,7 @@ router.patch('/users/me', auth, async (req, res) => {
     const updatesAllowed = [ 'name', 'birthday' ]
     const canUpdate = updates.every(update => updatesAllowed.includes(update))
 
-    // Exit if user try to update unallowed info
+    // Exit if user try to update restricted info
     if (!canUpdate)
         return res.status(400).send({ error: 'Invalid fields' })
 
