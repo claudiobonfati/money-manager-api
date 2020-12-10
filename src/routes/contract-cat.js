@@ -1,9 +1,9 @@
 const express = require('express')
 const ContractCat = require('../models/contract-cat')
 const auth = require('../middleware/auth')
-
 const router = new express.Router()
 
+// Create contract's categories
 router.post('/contractCats', auth, async (req, res) => {
     try {
         const contractCat = new ContractCat(req.body)
@@ -15,6 +15,7 @@ router.post('/contractCats', auth, async (req, res) => {
     }
 })
 
+// gget contract's categories
 router.get('/contractCats', auth, async (req, res) => {
     try {
         const ContractCats = await ContractCat.find({})

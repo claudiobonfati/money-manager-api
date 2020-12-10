@@ -9,18 +9,20 @@ const authEasyLogin = require('../middleware/authEasyLogin')
 const router = new express.Router()
 require('../helpers/async-foreach')
 
+// Create new user
 router.post('/users', async (req, res) => {
     const user = new User(req.body)
 
     try {
         await user.save()
-        const token = await user.generateAuthToken()        
+        const token = await user.generateAuthToken()
         res.status(201).send({ user, token })
     } catch(e) { 
         res.status(400).send()
     }
 })
 
+// Login user
 router.post('/users/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password)
@@ -31,12 +33,15 @@ router.post('/users/login', async (req, res) => {
     }
 })
 
+// Login user using EasyLogin feature 
 router.post('/users/loginEasy', authEasyLogin, (req, res) => {
+    // Scape if there isnt any _id in request body
     if (!req.body._id) 
         return res.status(400).send()
 
     req.body._id = new ObjectId(req.body._id) 
 
+    // Create array with possible passwords
     let mount = (list, n = 0, passwords = [], current = []) => {
         if (n === list.length) passwords.push(current)
         else list[n].forEach(item => mount(list, n+1, passwords, [...current, item]))
@@ -46,6 +51,7 @@ router.post('/users/loginEasy', authEasyLogin, (req, res) => {
 
     let passwords = mount(req.body.password);
 
+    // Test array of possible passwords
     const testPassword = async (arr) => {
         let counter = 1
         let total = arr.length
@@ -67,15 +73,18 @@ router.post('/users/loginEasy', authEasyLogin, (req, res) => {
             counter++
         }
 
-        return false;
+        return false
     };
 
+    // Run tests
     testPassword(passwords)
 })
 
+// Logout user
 router.post('/users/logout', auth, async (req, res) => {
     try {
         let tokenIndex = req.user.tokens.findIndex((obj => obj.token == req.token))
+        // Here we keep the old token to be used as EasyLogin authenticator
         req.user.tokens[tokenIndex].status = 'trashed'
         req.user.tokens[tokenIndex].easy_login_count = 0
 
@@ -86,6 +95,7 @@ router.post('/users/logout', auth, async (req, res) => {
     }
 })
 
+// Kill all authentication tokens (Logout all devices)
 router.post('/users/logoutAll', auth, async (req, res) => {
     try {
         req.user.tokens = [];
@@ -97,10 +107,12 @@ router.post('/users/logoutAll', auth, async (req, res) => {
     }
 })
 
+// Get user's profile 
 router.get('/users/me', auth, async (req, res) => {
     res.send(req.user)
 })
 
+// Get user wallet's overview
 router.get('/users/me/wallet', auth, async (req, res) => {
     let limitDate = new Date()
 
@@ -137,7 +149,6 @@ router.get('/users/me/wallet', auth, async (req, res) => {
 
     let incomePrices = incomeTransactions.map(i => i.price)
     let expensePrices = expenseTransactions.map(i => i.price)
-    
     let incomeTotal = incomePrices.reduce((a, b) => a + b, 0)
     let expenseTotal = expensePrices.reduce((a, b) => a + b, 0)
 
@@ -147,15 +158,18 @@ router.get('/users/me/wallet', auth, async (req, res) => {
     })
 })
 
+// Update user's profile
 router.patch('/users/me', auth, async (req, res) => {
+    // (Security) Validate data to be updated
     const updates = Object.keys(req.body)
     const updatesAllowed = [ 'name', 'birthday' ]
     const canUpdate = updates.every(update => updatesAllowed.includes(update))
 
-    if (!canUpdate) {
+    // Exit if user try to update unallowed info
+    if (!canUpdate)
         return res.status(400).send({ error: 'Invalid fields' })
-    }
 
+    // Run update
     try {
         updates.forEach(key => req.user[key] = req.body[key])
 
@@ -167,6 +181,7 @@ router.patch('/users/me', auth, async (req, res) => {
     }
 })
 
+// Delete user's account
 router.delete('/users/me', auth, async (req, res) => {
     try { 
         await req.user.remove()
@@ -176,6 +191,7 @@ router.delete('/users/me', auth, async (req, res) => {
     }
 })
 
+// Init multer
 const upload = multer({
     limits: {
         fileSize: 1000000
@@ -189,6 +205,7 @@ const upload = multer({
     }
 })
 
+// Update user's avatar using multer
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
     const buffer = await sharp(req.file.buffer).resize({ width: 300, height: 300 }).png().toBuffer()
     req.user.avatar = buffer
@@ -198,6 +215,7 @@ router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) 
     res.status(404).send({ error: error.message })
 })
 
+// Get user's avatar
 router.get('/users/me/avatar', auth, async (req, res) => {
     if(!req.user.avatar) {
         const buffer = await sharp('src/images/mascot.svg').png().toBuffer()
@@ -207,6 +225,7 @@ router.get('/users/me/avatar', auth, async (req, res) => {
     }
 })
 
+// Get avatar by user's _id 
 router.get('/users/:id/avatar', async (req, res) => {
     try {
         const user = await User.findById(req.params.id)
@@ -221,6 +240,7 @@ router.get('/users/:id/avatar', async (req, res) => {
     }
 })
 
+// Get user basic profile by user's email
 router.post('/users/presentation', async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email })

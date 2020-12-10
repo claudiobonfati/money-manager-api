@@ -6,6 +6,7 @@ const ContractCat = require('../models/contract-cat')
 const router = new express.Router()
 require('../helpers/async-foreach')
 
+// Get dashboard data by month number
 router.post('/dashboard', auth, async (req, res) => {
     // Check if user is new
     let checkNewUser = await Contract.find({ owner: req.user._id }).select('title')
@@ -57,7 +58,6 @@ router.post('/dashboard', auth, async (req, res) => {
 
     let incomePrices = incomeTransactions.map(i => i.price)
     let expensePrices = expenseTransactions.map(i => i.price)
-
     let incomeTotal = incomePrices.reduce((a, b) => a + b, 0)
     let expenseTotal = expensePrices.reduce((a, b) => a + b, 0)
 

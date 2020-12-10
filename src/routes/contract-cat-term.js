@@ -1,9 +1,9 @@
 const express = require('express')
 const ContractCatTerm = require('../models/contract-cat-term')
 const auth = require('../middleware/auth')
-
 const router = new express.Router()
 
+// Create contract category's terms
 router.post('/contractCatTerms', auth, async (req, res) => {
     try {
         const contractCatTerm = new ContractCatTerm(req.body)
@@ -15,6 +15,7 @@ router.post('/contractCatTerms', auth, async (req, res) => {
     }
 })
 
+// Get contract category's terms
 router.get('/contractCatTerms', auth, async (req, res) => {
     try {
         const ContractCatTems = await ContractCatTerm.find({})
